@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { predictQuestions } from "@/app/actions/predict"
 import PredictionCard from "@/components/prediction-card"
@@ -13,10 +13,11 @@ import Link from "next/link"
 
 const QUICK_SUBJECTS = ["Physics", "Chemistry", "Mathematics", "Biology", "Bangla"]
 
-export default function PredictPage() {
+// Inner component that uses useSearchParams
+function PredictContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  
+
   const [subject, setSubject] = useState(searchParams.get("subject") || "Physics")
   const [targetYear, setTargetYear] = useState(Number(searchParams.get("year")) || 2026)
   const [predictions, setPredictions] = useState<Prediction[]>([])
@@ -240,5 +241,21 @@ export default function PredictPage() {
         </div>
       )}
     </div>
+  )
+}
+
+// Wrapper with Suspense boundary
+export default function PredictPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center py-20" style={{ color: "var(--text-muted)" }}>
+          <span className="inline-block animate-spin text-2xl mb-4">⟳</span>
+          <p>Loading AI Predictor...</p>
+        </div>
+      }
+    >
+      <PredictContent />
+    </Suspense>
   )
 }
