@@ -42,13 +42,53 @@
     --glow: 0 0 40px rgba(139, 92, 246, 0.2);
   }
 
+  /* Light theme overrides */
+  .light {
+    --background: 240 20% 98%;
+    --foreground: 240 15% 12%;
+    --card: 240 20% 96%;
+    --card-foreground: 240 15% 12%;
+    --popover: 240 20% 96%;
+    --popover-foreground: 240 15% 12%;
+    --primary: 258 90% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 15% 92%;
+    --secondary-foreground: 240 15% 12%;
+    --muted: 240 15% 92%;
+    --muted-foreground: 240 10% 45%;
+    --accent: 240 15% 92%;
+    --accent-foreground: 240 15% 12%;
+    --destructive: 350 89% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 258 30% 70%;
+    --border-opacity: 0.25;
+    --input: 240 15% 94%;
+    --ring: 258 90% 60%;
+
+    --violet: #7c3aed;
+    --violet-light: #8b5cf6;
+    --indigo: #4f46e5;
+    --pink: #db2777;
+    --emerald: #059669;
+    --amber: #d97706;
+    --rose: #e11d48;
+    --surface: #ffffff;
+    --surface2: #f4f4f9;
+    --text-primary: #1a1a2e;
+    --text-muted: #6b7280;
+    --border-color: rgba(124, 58, 237, 0.2);
+    --border-hover: rgba(124, 58, 237, 0.4);
+    --glow: 0 0 40px rgba(124, 58, 237, 0.15);
+  }
+
   * {
     @apply border-border;
   }
 
   body {
     @apply antialiased;
-    background: #050508;
+    background: #050508; /* fallback */
+    background-color: hsl(var(--background));
     color: var(--text-primary);
     font-family: 'Sora', 'Inter', sans-serif;
     min-height: 100vh;
@@ -59,7 +99,7 @@
     width: 4px;
   }
   ::-webkit-scrollbar-track {
-    background: #050508;
+    background: hsl(var(--background));
   }
   ::-webkit-scrollbar-thumb {
     background: var(--violet);
@@ -85,14 +125,14 @@
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, #c4b5fd 0%, #818cf8 40%, #ec4899 80%);
+    background: linear-gradient(135deg, var(--violet-light), var(--indigo), var(--pink));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
   .gradient-text-logo {
-    background: linear-gradient(135deg, #a78bfa, #6366f1, #ec4899);
+    background: linear-gradient(135deg, var(--violet-light), var(--indigo), var(--pink));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -281,7 +321,7 @@
   }
 
   .form-input-styled {
-    background: rgba(13, 13, 20, 0.8);
+    background: var(--surface2);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 11px 14px;
@@ -301,7 +341,7 @@
   }
 
   .form-select-styled {
-    background: rgba(13, 13, 20, 0.8);
+    background: var(--surface2);
     border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 11px 14px;
