@@ -1,32 +1,57 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { predictQuestions } from "@/app/actions/predict"
 import PredictionCard from "@/components/prediction-card"
+import { savePredictionToHistory, getPredictionHistory } from "@/lib/localStore"
+import { exportPredictionsAsPDF } from "@/lib/export"
 import type { Prediction } from "@/lib/types"
 import Link from "next/link"
 
 const QUICK_SUBJECTS = ["Physics", "Chemistry", "Mathematics", "Biology", "Bangla"]
 
 export default function PredictPage() {
-  const [subject, setSubject] = useState("Physics")
-  const [targetYear, setTargetYear] = useState(2026)
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  
+  const [subject, setSubject] = useState(searchParams.get("subject") || "Physics")
+  const [targetYear, setTargetYear] = useState(Number(searchParams.get("year")) || 2026)
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [history, setHistory] = useState<ReturnType<typeof getPredictionHistory>>([])
+  const [showExport, setShowExport] = useState(false)
 
   const years = Array.from({ length: 35 }, (_, i) => 1990 + i)
+
+  // Update URL when subject/year change
+  useEffect(() => {
+    const params = new URLSearchParams()
+    params.set("subject", subject.trim())
+    params.set("year", targetYear.toString())
+    router.replace(`/predict?${params.toString()}`, { scroll: false })
+  }, [subject, targetYear, router])
+
+  // Load local history
+  useEffect(() => {
+    setHistory(getPredictionHistory())
+  }, [])
 
   const handlePredict = async () => {
     if (!subject.trim()) return
     setLoading(true)
     setError("")
     setPredictions([])
+    setShowExport(false)
     try {
       const res = await predictQuestions(subject.trim(), targetYear)
       if ('error' in res && res.error) {
         setError(res.error)
       } else if ('predictions' in res) {
         setPredictions(res.predictions)
+        savePredictionToHistory(subject.trim(), targetYear)
+        setHistory(getPredictionHistory())
+        setShowExport(true)
       } else {
         setError("Unexpected response")
       }
@@ -37,9 +62,18 @@ export default function PredictPage() {
     }
   }
 
+  const handleExport = () => {
+    exportPredictionsAsPDF(subject, targetYear, "predictions-container")
+  }
+
+  const copyShareLink = () => {
+    const url = `${window.location.origin}/predict?subject=${encodeURIComponent(subject)}&year=${targetYear}`
+    navigator.clipboard.writeText(url)
+    alert("Link copied! Share with your friends.")
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-8">
-      {/* Header */}
       <div>
         <Link
           href="/"
@@ -47,10 +81,7 @@ export default function PredictPage() {
         >
           ← Back
         </Link>
-        <h2
-          className="text-[26px] font-extrabold tracking-[-0.5px] mb-1.5"
-          style={{ color: "var(--text-primary)" }}
-        >
+        <h2 className="text-[26px] font-extrabold tracking-[-0.5px] mb-1.5 gradient-text">
           🔮 AI Exam Forecast
         </h2>
         <p style={{ fontSize: 14, color: "var(--text-muted)" }}>
@@ -58,9 +89,7 @@ export default function PredictPage() {
         </p>
       </div>
 
-      {/* Form card */}
       <div className="glass-card" style={{ padding: "28px" }}>
-        {/* Quick subject chips */}
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: "var(--text-muted)", marginBottom: 8 }}>
           Quick Select Subject
         </div>
@@ -78,9 +107,7 @@ export default function PredictPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_200px] gap-4 mb-5">
           <div className="flex flex-col gap-2">
-            <label
-              style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: "var(--text-muted)" }}
-            >
+            <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: "var(--text-muted)" }}>
               Subject Name
             </label>
             <input
@@ -92,9 +119,7 @@ export default function PredictPage() {
             />
           </div>
           <div className="flex flex-col gap-2">
-            <label
-              style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: "var(--text-muted)" }}
-            >
+            <label style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: "var(--text-muted)" }}>
               Target Year
             </label>
             <select
@@ -125,26 +150,36 @@ export default function PredictPage() {
         </button>
 
         {error && (
-          <div
-            style={{
-              marginTop: 14,
-              padding: "14px 20px",
-              borderRadius: 14,
-              background: "rgba(244,63,94,0.12)",
-              border: "1px solid rgba(244,63,94,0.3)",
-              color: "#fda4af",
-              fontSize: 14,
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-            }}
-          >
+          <div style={{
+            marginTop: 14, padding: "14px 20px", borderRadius: 14,
+            background: "rgba(244,63,94,0.12)", border: "1px solid rgba(244,63,94,0.3)",
+            color: "#fda4af", fontSize: 14, display: "flex", alignItems: "center", gap: 10,
+          }}>
             ❌ {error}
+          </div>
+        )}
+
+        {/* Recent history */}
+        {history.length > 0 && !loading && predictions.length === 0 && (
+          <div style={{ marginTop: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8 }}>
+              📌 Recent Predictions
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {history.slice(0, 5).map((h, i) => (
+                <button
+                  key={i}
+                  onClick={() => { setSubject(h.subject); setTargetYear(h.year); }}
+                  className="subject-chip"
+                >
+                  {h.subject} ({h.year})
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Skeleton loading */}
       {loading && (
         <div className="space-y-3.5">
           {[1, 2, 3, 4].map(i => (
@@ -161,23 +196,27 @@ export default function PredictPage() {
         </div>
       )}
 
-      {/* Results */}
       {!loading && predictions.length > 0 && (
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
             <div style={{ fontSize: 14, color: "var(--text-muted)" }}>
               <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{predictions.length}</span>
               {" "}predictions for{" "}
               <span style={{ color: "var(--violet-light)", fontWeight: 600 }}>{subject} {targetYear}</span>
             </div>
-            <button
-              onClick={() => setPredictions([])}
-              className="btn-ghost-muted px-3 py-1.5 text-xs"
-            >
-              Clear
-            </button>
+            <div className="flex gap-2">
+              <button onClick={copyShareLink} className="btn-ghost-muted px-3 py-1.5 text-xs">
+                🔗 Copy Link
+              </button>
+              <button onClick={handleExport} className="btn-ghost-muted px-3 py-1.5 text-xs">
+                📥 Download PDF
+              </button>
+              <button onClick={() => setPredictions([])} className="btn-ghost-muted px-3 py-1.5 text-xs">
+                Clear
+              </button>
+            </div>
           </div>
-          <div className="space-y-3.5">
+          <div id="predictions-container" className="space-y-3.5">
             {predictions.map((p, i) => (
               <PredictionCard key={i} prediction={p} index={i} />
             ))}
@@ -185,15 +224,15 @@ export default function PredictPage() {
         </div>
       )}
 
-      {/* Empty state */}
       {!loading && !error && predictions.length === 0 && (
         <div className="text-center py-20">
-          <div style={{ fontSize: 56, marginBottom: 16, filter: "grayscale(0.2)" }}>🔮</div>
+          <div style={{ fontSize: 56, marginBottom: 16 }}>🔮</div>
           <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8, color: "var(--text-primary)" }}>
             Ready to predict
           </div>
           <div style={{ fontSize: 14, color: "var(--text-muted)" }}>
-            Select a subject and click Generate Predictions.<br />Try &quot;Physics&quot; or &quot;Mathematics&quot; to get started.
+            Select a subject and click Generate Predictions.<br />
+            Or explore available subjects from the <Link href="/subjects" style={{ color: "var(--violet-light)" }}>Subjects</Link> page.
           </div>
         </div>
       )}
