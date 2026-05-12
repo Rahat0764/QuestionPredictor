@@ -4,23 +4,34 @@ import { getPrediction } from '@/lib/groq';
 import type { Prediction } from '@/lib/types';
 import { logToTelegram } from '@/lib/logger';
 
-export async function predictQuestions(subject: string): Promise<
-  { success: true; predictions: Prediction[] } | { error: string }
-> {
+export async function predictQuestions(
+  subject: string,
+  targetYear: number
+): Promise<{ success: true; predictions: Prediction[] } | { error: string }> {
   try {
     await initDB();
     const subjectRes = await sql`SELECT id FROM subjects WHERE name = ${subject}`;
     if (subjectRes.length === 0) return { error: 'Subject not found' };
     const subjectId = subjectRes[0].id;
 
-    const qres = await sql`SELECT year, text FROM questions WHERE subject_id = ${subjectId} ORDER BY year DESC LIMIT 50`;
-    const rres = await sql`SELECT text FROM resources WHERE subject_name = ${subject} OR subject_name IS NULL LIMIT 20`;
+    // Fetch only questions with year < targetYear
+    const qres = await sql`
+      SELECT year, text FROM questions
+      WHERE subject_id = ${subjectId} AND year < ${targetYear}
+      ORDER BY year DESC
+      LIMIT 50
+    `;
+    const rres = await sql`
+      SELECT text FROM resources
+      WHERE subject_name = ${subject} OR subject_name IS NULL
+      LIMIT 20
+    `;
 
     const questionsList = qres.map(r => `Year ${r.year}: ${r.text}`).join('\n\n');
     const resourcesText = rres.map(r => r.text).join('\n\n');
 
     const prompt = `You are an exam prediction expert. Analyze the provided previous years' exam questions and study materials for the subject "${subject}". 
-Identify recurring topics, patterns, and predict the most likely questions for the upcoming exam (2027). 
+All these questions are from years before ${targetYear}. Based on patterns and recurring topics, predict the most likely questions for the upcoming exam in ${targetYear}. 
 Output a JSON object with a key "predictions" containing an array of objects. Each object must have:
 - "question_text": string
 - "probability": number (0-100)
@@ -44,7 +55,10 @@ Output ONLY the JSON object.`;
       throw new Error('Invalid prediction format');
     }
 
-    logToTelegram(`🔮 Prediction generated\nSubject: ${subject}\nPredictions: ${result.predictions.length}`, 'success').catch(() => {});
+    logToTelegram(
+      `🔮 Prediction generated\nSubject: ${subject}\nTarget Year: ${targetYear}\nPredictions: ${result.predictions.length}`,
+      'success'
+    ).catch(() => {});
     return { success: true, predictions: result.predictions };
   } catch (err: any) {
     logToTelegram(`🔮 Prediction failed\nSubject: ${subject}\nError: ${err.message}`, 'error').catch(() => {});
