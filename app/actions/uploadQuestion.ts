@@ -24,14 +24,16 @@ export async function uploadQuestion(formData: FormData) {
 
   const results = [];
   for (const file of files) {
-    // Upload to blob
-    const blob = await put(file.name, await file.arrayBuffer(), {
+    // Read buffer once
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Upload to blob using the same buffer
+    const blob = await put(file.name, buffer, {
       access: 'public',
       contentType: file.type,
     });
 
-    // Perform OCR
-    const buffer = Buffer.from(await file.arrayBuffer());
+    // Perform OCR on the buffer
     const extractedText = await performOCR(buffer, 'eng+ben');
 
     // Save to DB
