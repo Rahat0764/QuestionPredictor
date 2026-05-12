@@ -109,6 +109,21 @@ export default function PredictionCard({ prediction, index }: { prediction: Pred
           />
         ))}
       </div>
+  
+      <div className="flex items-center gap-3 mt-4">
+        <button
+          onClick={() => submitFeedback(subject, year, index, true).then(() => toast.success('Thanks for your feedback!'))}
+          className="btn-ghost-muted px-2 py-1 text-xs"
+  >
+          👍 Helpful
+        </button>
+        <button
+          onClick={() => submitFeedback(subject, year, index, false).then(() => toast.success('Thanks for your feedback!'))}
+          className="btn-ghost-muted px-2 py-1 text-xs"
+  >
+          👎 Not helpful
+        </button>
+      </div>
 
       {/* Toggle info */}
       <button
