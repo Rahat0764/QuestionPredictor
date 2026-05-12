@@ -3,11 +3,12 @@ import { useFormState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { uploadResource } from "@/app/actions/uploadResource"
+import type { UploadState } from "@/lib/types"
 
-const initialState = {
+const initialState: UploadState = {
   success: false,
   error: "",
-  results: null as any,
+  results: null,
 }
 
 function SubmitButton() {
@@ -49,11 +50,6 @@ export default function UploadResources() {
       {state.success && state.results && (
         <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-md text-sm">
           Successfully uploaded {state.results.length} resource(s)!
-          <ul className="list-disc pl-5 mt-2">
-            {state.results.map((r: any, i: number) => (
-              <li key={i}>📚 {r.text}...</li>
-            ))}
-          </ul>
         </div>
       )}
     </div>
