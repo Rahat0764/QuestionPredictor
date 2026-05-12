@@ -1,23 +1,14 @@
-"use client"
-import { useState, useEffect } from "react"
 import Link from "next/link"
+import { sql } from "@/lib/db"
+import { AnimatedCounter } from "@/components/animated-counter"
 
-function Counter({ value, duration = 1500 }: { value: number; duration?: number }) {
-  const [count, setCount] = useState(0)
-  useEffect(() => {
-    let start = 0
-    const step = (ts: number) => {
-      if (!start) start = ts
-      const progress = Math.min((ts - start) / duration, 1)
-      setCount(Math.floor(progress * value))
-      if (progress < 1) requestAnimationFrame(step)
-    }
-    requestAnimationFrame(step)
-  }, [value, duration])
-  return <span>{count.toLocaleString()}</span>
-}
+export default async function Home() {
+  // Fetch real counts
+  const subjectsCount = await sql`SELECT COUNT(*)::int as count FROM subjects`
+  const questionsCount = await sql`SELECT COUNT(*)::int as count FROM questions`
+  const totalSubjects = subjectsCount[0]?.count || 0
+  const totalQuestions = questionsCount[0]?.count || 0
 
-export default function Home() {
   return (
     <div className="space-y-20">
       {/* Hero */}
@@ -41,27 +32,29 @@ export default function Home() {
         </div>
 
         <div className="flex flex-wrap justify-center gap-10 mt-8">
-          {[
-            { value: 98, label: "Accuracy" },
-            { value: 50000, label: "Questions Analyzed" },
-            { value: 12, label: "Subjects Supported" },
-          ].map(stat => (
-            <div key={stat.label} className="text-center">
-              <div className="text-3xl font-extrabold gradient-text">
-                <Counter value={stat.value} />{stat.value === 98 ? '%' : '+'}
-              </div>
-              <div className="text-sm text-zinc-500 mt-1">{stat.label}</div>
+          <div className="text-center">
+            <div className="text-3xl font-extrabold gradient-text">{totalSubjects}+</div>
+            <div className="text-sm text-zinc-500 mt-1">Subjects</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-extrabold gradient-text">
+              <AnimatedCounter value={totalQuestions} />+
             </div>
-          ))}
+            <div className="text-sm text-zinc-500 mt-1">Questions Analyzed</div>
+          </div>
+          <div className="text-center">
+            <div className="text-3xl font-extrabold gradient-text">12+</div>
+            <div className="text-sm text-zinc-500 mt-1">Years Coverage</div>
+          </div>
         </div>
       </section>
 
       {/* Feature cards */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { href: "/upload/questions", icon: "📝", title: "Upload Questions", desc: "Scan past exam papers. AI-powered OCR supports English & Bengali.", gradient: "from-blue-500/10 to-indigo-500/10" },
-          { href: "/upload/resources", icon: "📚", title: "Upload Resources", desc: "Add textbooks, notes, and supplements for deeper analysis.", gradient: "from-emerald-500/10 to-teal-500/10" },
-          { href: "/predict", icon: "🔮", title: "Get Predictions", desc: "AI detects patterns and forecasts probable questions with confidence scores.", gradient: "from-purple-500/10 to-pink-500/10" },
+          { href: "/upload/questions", icon: "📝", title: "Upload Questions", desc: "Scan past exam papers. AI-powered OCR supports English & Bengali." },
+          { href: "/upload/resources", icon: "📚", title: "Upload Resources", desc: "Add textbooks, notes, and supplements for deeper analysis." },
+          { href: "/predict", icon: "🔮", title: "Get Predictions", desc: "AI detects patterns and forecasts probable questions with confidence scores." },
         ].map(card => (
           <Link key={card.title} href={card.href} className="glass group hover:border-white/20 transition-all duration-300 hover:scale-[1.02] p-6">
             <div className="text-3xl mb-4">{card.icon}</div>
