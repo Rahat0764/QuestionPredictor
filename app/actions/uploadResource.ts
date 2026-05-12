@@ -4,6 +4,7 @@ import { sql, initDB } from '@/lib/db';
 import { performOCR } from '@/lib/ocr';
 import pdfParse from 'pdf-parse';
 import type { UploadState } from '@/lib/types';
+import { logToTelegram } from '@/lib/logger';
 
 export async function uploadResource(
   prevState: UploadState,
@@ -48,8 +49,18 @@ export async function uploadResource(
 
       results.push({ url: blob.url, text: text.substring(0, 100) });
     }
+
+    logToTelegram(
+      `📚 Resource upload success\nSubject: ${subject || 'N/A'}\nName: ${name}\nFiles: ${files.length}`,
+      'success'
+    ).catch(() => {});
+
     return { success: true, results };
   } catch (err: any) {
+    logToTelegram(
+      `📚 Resource upload failed\nError: ${err.message}`,
+      'error'
+    ).catch(() => {});
     return { success: false, error: err.message || 'Upload failed', results: null };
   }
 }
