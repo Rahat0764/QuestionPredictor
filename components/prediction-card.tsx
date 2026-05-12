@@ -1,9 +1,13 @@
 "use client"
 import { useState } from "react"
 import type { Prediction } from "@/lib/types"
+import { recordFeedback } from "@/app/actions/feedback"
 
 export default function PredictionCard({ prediction, index }: { prediction: Prediction; index: number }) {
   const [expanded, setExpanded] = useState(false)
+  const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
+  const [feedbackPending, setFeedbackPending] = useState(false)
+
   const prob = prediction.probability
   const tier = prob > 70 ? "high" : prob > 40 ? "mid" : "low"
 
@@ -24,6 +28,25 @@ export default function PredictionCard({ prediction, index }: { prediction: Pred
   const filledBars = Math.round(prob / 10)
   const confDotColor =
     tier === "high" ? "#10b981" : tier === "mid" ? "#f59e0b" : "#f43f5e"
+
+  const handleFeedback = async (vote: 'up' | 'down') => {
+    if (feedback || feedbackPending) return
+    setFeedbackPending(true)
+    try {
+      await recordFeedback({
+        predictionIndex: index,
+        questionText: prediction.question_text,
+        vote,
+        subject: '',   // Not immediately available, but can be passed from parent; we'll use placeholder for now
+        targetYear: 0, // same
+      })
+      setFeedback(vote)
+    } catch (err) {
+      // fail silently
+    } finally {
+      setFeedbackPending(false)
+    }
+  }
 
   return (
     <div
@@ -109,19 +132,43 @@ export default function PredictionCard({ prediction, index }: { prediction: Pred
           />
         ))}
       </div>
-  
-      <div className="flex items-center gap-3 mt-4">
+
+      {/* Feedback buttons */}
+      <div className="flex items-center gap-3 mt-3">
+        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Was this helpful?</span>
         <button
-          onClick={() => submitFeedback(subject, year, index, true).then(() => toast.success('Thanks for your feedback!'))}
-          className="btn-ghost-muted px-2 py-1 text-xs"
-  >
-          👍 Helpful
+          onClick={() => handleFeedback('up')}
+          disabled={feedbackPending || feedback === 'up'}
+          style={{
+            opacity: feedback === 'up' ? 1 : 0.5,
+            background: feedback === 'up' ? 'rgba(16,185,129,0.15)' : 'transparent',
+            border: '1px solid ' + (feedback === 'up' ? '#10b981' : 'var(--border-color)'),
+            borderRadius: 8,
+            padding: '2px 8px',
+            cursor: feedbackPending ? 'wait' : 'pointer',
+            fontSize: 18,
+            transition: 'all 0.2s',
+          }}
+          title="Accurate"
+        >
+          👍
         </button>
         <button
-          onClick={() => submitFeedback(subject, year, index, false).then(() => toast.success('Thanks for your feedback!'))}
-          className="btn-ghost-muted px-2 py-1 text-xs"
-  >
-          👎 Not helpful
+          onClick={() => handleFeedback('down')}
+          disabled={feedbackPending || feedback === 'down'}
+          style={{
+            opacity: feedback === 'down' ? 1 : 0.5,
+            background: feedback === 'down' ? 'rgba(244,63,94,0.15)' : 'transparent',
+            border: '1px solid ' + (feedback === 'down' ? '#f43f5e' : 'var(--border-color)'),
+            borderRadius: 8,
+            padding: '2px 8px',
+            cursor: feedbackPending ? 'wait' : 'pointer',
+            fontSize: 18,
+            transition: 'all 0.2s',
+          }}
+          title="Not accurate"
+        >
+          👎
         </button>
       </div>
 
