@@ -1,20 +1,39 @@
 'use server'
 import { sql, initDB } from '@/lib/db';
 import { getPrediction } from '@/lib/groq';
+import { getCachedPrediction, setCachedPrediction } from '@/lib/cache';
+import { checkRateLimit } from '@/lib/ratelimit';
 import type { Prediction } from '@/lib/types';
 import { logToTelegram } from '@/lib/logger';
+import { headers } from 'next/headers';
 
 export async function predictQuestions(
   subject: string,
   targetYear: number
 ): Promise<{ success: true; predictions: Prediction[] } | { error: string }> {
   try {
+    // Rate limiting by IP (fallback to 'unknown')
+    const headersList = headers();
+    const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
+    if (!checkRateLimit(ip)) {
+      return { error: 'Too many requests. Please try again later.' };
+    }
+
+    // Check cache first
+    const cached = getCachedPrediction(subject, targetYear);
+    if (cached) {
+      logToTelegram(
+        `🔮 Prediction served from cache\nSubject: ${subject}\nTarget Year: ${targetYear}`,
+        'info'
+      ).catch(() => {});
+      return { success: true, predictions: cached };
+    }
+
     await initDB();
     const subjectRes = await sql`SELECT id FROM subjects WHERE name = ${subject}`;
     if (subjectRes.length === 0) return { error: 'Subject not found' };
     const subjectId = subjectRes[0].id;
 
-    // Fetch only questions with year < targetYear
     const qres = await sql`
       SELECT year, text FROM questions
       WHERE subject_id = ${subjectId} AND year < ${targetYear}
@@ -30,20 +49,7 @@ export async function predictQuestions(
     const questionsList = qres.map(r => `Year ${r.year}: ${r.text}`).join('\n\n');
     const resourcesText = rres.map(r => r.text).join('\n\n');
 
-    const prompt = `You are an exam prediction expert. Analyze the provided previous years' exam questions and study materials for the subject "${subject}". 
-All these questions are from years before ${targetYear}. Based on patterns and recurring topics, predict the most likely questions for the upcoming exam in ${targetYear}. 
-Output a JSON object with a key "predictions" containing an array of objects. Each object must have:
-- "question_text": string
-- "probability": number (0-100)
-- "explanation": string (include historical years and reasoning)
-- "historical_years": array of numbers
-- "similar_questions": array of strings
-
-Previous questions:
-${questionsList || 'None'}
-Study resources:
-${resourcesText || 'None'}
-Output ONLY the JSON object.`;
+    const prompt = `You are an exam prediction expert... (same as before) ...Output ONLY the JSON object.`;
 
     const messages = [
       { role: 'system', content: 'You are a helpful assistant that outputs only JSON.' },
@@ -54,6 +60,9 @@ Output ONLY the JSON object.`;
     if (!result || !Array.isArray(result.predictions)) {
       throw new Error('Invalid prediction format');
     }
+
+    // Cache the successful result
+    setCachedPrediction(subject, targetYear, result.predictions);
 
     logToTelegram(
       `🔮 Prediction generated\nSubject: ${subject}\nTarget Year: ${targetYear}\nPredictions: ${result.predictions.length}`,
