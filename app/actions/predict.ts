@@ -10,23 +10,14 @@ export async function predictQuestions(subject: string): Promise<
   try {
     await initDB();
     const subjectRes = await sql`SELECT id FROM subjects WHERE name = ${subject}`;
-    if (subjectRes.rows.length === 0) return { error: 'Subject not found' };
-    const subjectId = subjectRes.rows[0].id;
+    if (subjectRes.length === 0) return { error: 'Subject not found' };
+    const subjectId = subjectRes[0].id;
 
-    const qres = await sql`
-      SELECT year, text FROM questions
-      WHERE subject_id = ${subjectId}
-      ORDER BY year DESC
-      LIMIT 50
-    `;
-    const rres = await sql`
-      SELECT text FROM resources
-      WHERE subject_name = ${subject} OR subject_name IS NULL
-      LIMIT 20
-    `;
+    const qres = await sql`SELECT year, text FROM questions WHERE subject_id = ${subjectId} ORDER BY year DESC LIMIT 50`;
+    const rres = await sql`SELECT text FROM resources WHERE subject_name = ${subject} OR subject_name IS NULL LIMIT 20`;
 
-    const questionsList = qres.rows.map(r => `Year ${r.year}: ${r.text}`).join('\n\n');
-    const resourcesText = rres.rows.map(r => r.text).join('\n\n');
+    const questionsList = qres.map(r => `Year ${r.year}: ${r.text}`).join('\n\n');
+    const resourcesText = rres.map(r => r.text).join('\n\n');
 
     const prompt = `You are an exam prediction expert. Analyze the provided previous years' exam questions and study materials for the subject "${subject}". 
 Identify recurring topics, patterns, and predict the most likely questions for the upcoming exam (2027). 
@@ -53,17 +44,10 @@ Output ONLY the JSON object.`;
       throw new Error('Invalid prediction format');
     }
 
-    logToTelegram(
-      `🔮 Prediction generated\nSubject: ${subject}\nPredictions: ${result.predictions.length}`,
-      'success'
-    ).catch(() => {});
-
+    logToTelegram(`🔮 Prediction generated\nSubject: ${subject}\nPredictions: ${result.predictions.length}`, 'success').catch(() => {});
     return { success: true, predictions: result.predictions };
   } catch (err: any) {
-    logToTelegram(
-      `🔮 Prediction failed\nSubject: ${subject}\nError: ${err.message}`,
-      'error'
-    ).catch(() => {});
+    logToTelegram(`🔮 Prediction failed\nSubject: ${subject}\nError: ${err.message}`, 'error').catch(() => {});
     return { error: err.message };
   }
 }
