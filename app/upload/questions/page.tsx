@@ -3,11 +3,12 @@ import { useFormState, useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { uploadQuestion } from "@/app/actions/uploadQuestion"
+import type { UploadState } from "@/lib/types"
 
-const initialState = {
+const initialState: UploadState = {
   success: false,
   error: "",
-  results: null as any,
+  results: null,
 }
 
 function SubmitButton() {
@@ -26,7 +27,6 @@ export default function UploadQuestions() {
     <div className="max-w-2xl mx-auto space-y-8">
       <h2 className="text-2xl font-bold">Upload Past Questions</h2>
       <form action={formAction} className="space-y-6">
-        {/* Year Selection */}
         <div>
           <label className="block text-sm font-medium mb-1">Year</label>
           <select
@@ -40,13 +40,11 @@ export default function UploadQuestions() {
           </select>
         </div>
 
-        {/* Subject */}
         <div>
           <label className="block text-sm font-medium mb-1">Subject</label>
           <Input type="text" name="subject" placeholder="e.g., Mathematics, Physics, Bangla" required />
         </div>
 
-        {/* Question Images */}
         <div>
           <label className="block text-sm font-medium mb-1">Upload Question Images (multiple)</label>
           <Input type="file" name="files" multiple accept="image/*" required />
@@ -63,11 +61,6 @@ export default function UploadQuestions() {
       {state.success && state.results && (
         <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-md text-sm">
           Successfully uploaded {state.results.length} file(s)!
-          <ul className="list-disc pl-5 mt-2">
-            {state.results.map((r: any, i: number) => (
-              <li key={i}>📝 {r.text}...</li>
-            ))}
-          </ul>
         </div>
       )}
     </div>
