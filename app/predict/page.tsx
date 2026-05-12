@@ -27,7 +27,7 @@ function PredictContent() {
   const [history, setHistory] = useState<ReturnType<typeof getPredictionHistory>>([])
   const [isCached, setIsCached] = useState(false)
 
-  const years = Array.from({ length: 35 }, (_, i) => 1990 + i)
+  const years = Array.from({ length: new Date().getFullYear() - 1990 + 2 }, (_, i) => 1990 + i)
 
   // Update URL when subject/year change
   useEffect(() => {
