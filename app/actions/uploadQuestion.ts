@@ -3,6 +3,7 @@ import { put } from '@vercel/blob';
 import { sql, initDB } from '@/lib/db';
 import { performOCR } from '@/lib/ocr';
 import type { UploadState } from '@/lib/types';
+import { logToTelegram } from '@/lib/logger';
 
 export async function uploadQuestion(
   prevState: UploadState,
@@ -19,7 +20,6 @@ export async function uploadQuestion(
       return { success: false, error: 'Missing fields', results: null };
     }
 
-    // Insert or get subject
     const subjectRes = await sql`
       INSERT INTO subjects (name) VALUES (${subject})
       ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
@@ -29,7 +29,6 @@ export async function uploadQuestion(
 
     const results: { url: string; text: string }[] = [];
     for (const file of files) {
-      // Add file size validation (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
         return { success: false, error: `File "${file.name}" exceeds 10MB limit`, results: null };
       }
@@ -51,8 +50,17 @@ export async function uploadQuestion(
       results.push({ url: blob.url, text: extractedText.substring(0, 100) });
     }
 
+    logToTelegram(
+      `📝 Question upload success\nSubject: ${subject}\nYear: ${year}\nFiles: ${files.length}`,
+      'success'
+    ).catch(() => {});
+
     return { success: true, results };
   } catch (err: any) {
+    logToTelegram(
+      `📝 Question upload failed\nError: ${err.message}`,
+      'error'
+    ).catch(() => {});
     return { success: false, error: err.message || 'Upload failed', results: null };
   }
 }
