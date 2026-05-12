@@ -21,7 +21,9 @@ export default function UploadQuestions() {
     setFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)])
   }
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) setFiles(prev => [...prev, ...Array.from(e.target.files)])
+    if (e.target.files && e.target.files.length > 0) {
+      setFiles(prev => [...prev, ...Array.from(e.target.files as FileList)])
+    }
   }
   const removeFile = (index: number) => setFiles(prev => prev.filter((_, i) => i !== index))
 
@@ -59,7 +61,6 @@ export default function UploadQuestions() {
           </div>
         </div>
 
-        {/* Drop zone */}
         <div
           className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
             ${dragging ? "border-violet-400 bg-violet-500/5" : "border-white/10 hover:border-violet-500/30"}`}
