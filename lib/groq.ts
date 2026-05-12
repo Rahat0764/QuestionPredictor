@@ -17,7 +17,12 @@ async function groqChat(keys: string[], messages: any[]): Promise<any> {
         max_tokens: 4000,
         response_format: { type: 'json_object' },
       });
-      return JSON.parse(completion.choices[0]?.message?.content || '{}');
+      const content = completion.choices[0]?.message?.content || '{}';
+      try {
+        return JSON.parse(content);
+      } catch (parseErr) {
+        throw new Error('Invalid JSON from Groq');
+      }
     } catch (err: any) {
       lastError = err;
       if (err.status === 429 || err.status === 503) continue;
