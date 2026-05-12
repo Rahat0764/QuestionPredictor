@@ -16,10 +16,12 @@ export default function PredictPage() {
     setError("")
     try {
       const res = await predictQuestions(subject)
-      if (res.error) {
+      if ('error' in res && res.error) {
         setError(res.error)
-      } else {
+      } else if ('predictions' in res) {
         setPredictions(res.predictions)
+      } else {
+        setError("Unexpected response")
       }
     } catch (e: any) {
       setError(e.message)
