@@ -1,31 +1,23 @@
 'use server'
-import { sql, initDB } from '@/lib/db';
+import { headers } from 'next/headers';
+import { logToTelegram } from '@/lib/logger';
 
-export async function submitFeedback(
-  subject: string,
-  year: number,
-  questionIndex: number,
-  isHelpful: boolean
-): Promise<{ success: boolean }> {
-  try {
-    await initDB();
-    // Create feedback table if not exists
-    await sql`
-      CREATE TABLE IF NOT EXISTS feedback (
-        id SERIAL PRIMARY KEY,
-        subject TEXT NOT NULL,
-        year INTEGER NOT NULL,
-        question_index INTEGER NOT NULL,
-        is_helpful BOOLEAN NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW()
-      );
-    `;
-    await sql`
-      INSERT INTO feedback (subject, year, question_index, is_helpful)
-      VALUES (${subject}, ${year}, ${questionIndex}, ${isHelpful})
-    `;
-    return { success: true };
-  } catch (e) {
-    return { success: false };
-  }
+export async function recordFeedback(params: {
+  predictionIndex: number;
+  questionText: string;
+  vote: 'up' | 'down';
+  subject: string;
+  targetYear: number;
+}) {
+  const headersList = headers();
+  const ip =
+    headersList.get('x-real-ip') ||
+    headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    'unknown';
+
+  const emoji = params.vote === 'up' ? '👍' : '👎';
+  const message = `📝 Prediction Feedback\n${emoji} ${params.vote}\nSubject: ${params.subject}\nYear: ${params.targetYear}\nQuestion Index: #${params.predictionIndex + 1}\nQuestion: ${params.questionText.substring(0, 100)}…\nIP: ${ip}`;
+
+  logToTelegram(message, params.vote === 'up' ? 'success' : 'warning').catch(() => {});
+  return { ok: true };
 }
