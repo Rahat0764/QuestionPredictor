@@ -5,11 +5,12 @@ import { getPrediction } from '@/lib/groq';
 import type { Prediction } from '@/lib/types';
 import { logToTelegram } from '@/lib/logger';
 import { checkRateLimit } from '@/lib/rateLimit';
+import { getCachedPrediction, setCachedPrediction } from '@/lib/cache';
 
 export async function predictQuestions(
   subject: string,
   targetYear: number
-): Promise<{ success: true; predictions: Prediction[] } | { error: string }> {
+): Promise<{ success: true; predictions: Prediction[]; cached?: boolean } | { error: string }> {
   // IP extraction
   const headersList = headers();
   const ip =
@@ -24,6 +25,16 @@ export async function predictQuestions(
       'warning'
     ).catch(() => {});
     return { error: 'You are generating predictions too frequently. Please wait a moment and try again.' };
+  }
+
+  // Check cache first
+  const cached = getCachedPrediction(subject, targetYear);
+  if (cached) {
+    logToTelegram(
+      `🗂️ Cache hit\nSubject: ${subject}\nYear: ${targetYear}\nIP: ${ip}`,
+      'info'
+    ).catch(() => {});
+    return { success: true, predictions: cached, cached: true };
   }
 
   try {
@@ -71,6 +82,9 @@ Output ONLY the JSON object.`;
     if (!result || !Array.isArray(result.predictions)) {
       throw new Error('Invalid prediction format');
     }
+
+    // Store in cache
+    setCachedPrediction(subject, targetYear, result.predictions);
 
     logToTelegram(
       `🔮 Prediction generated\nSubject: ${subject}\nTarget Year: ${targetYear}\nPredictions: ${result.predictions.length}\nIP: ${ip}`,
