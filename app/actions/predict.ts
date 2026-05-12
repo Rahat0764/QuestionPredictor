@@ -1,14 +1,7 @@
 'use server'
 import { sql, initDB } from '@/lib/db';
 import { getPrediction } from '@/lib/groq';
-
-interface Prediction {
-  question_text: string;
-  probability: number;
-  explanation: string;
-  historical_years: number[];
-  similar_questions: string[];
-}
+import type { Prediction } from '@/lib/types';
 
 export async function predictQuestions(subject: string): Promise<
   { success: true; predictions: Prediction[] } | { error: string }
