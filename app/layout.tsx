@@ -1,5 +1,5 @@
 "use client"
-import { useRef, useEffect, useState } from "react"
+import { useRef, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -80,12 +80,14 @@ function NavTabs({ currentPath }: { currentPath: string }) {
     { id: "home", label: "🏠 Home", href: "/" },
     { id: "upload", label: "📤 Upload", href: "/upload/questions" },
     { id: "predict", label: "🔮 Predict", href: "/predict" },
+    { id: "subjects", label: "📊 Subjects", href: "/subjects" }
   ]
 
   const isActive = (tab: typeof tabs[0]) => {
     if (tab.id === "home") return currentPath === "/"
     if (tab.id === "upload") return currentPath.startsWith("/upload")
     if (tab.id === "predict") return currentPath.startsWith("/predict")
+    if (tab.id === "subjects") return currentPath.startsWith("/subjects")
     return false
   }
 
@@ -113,6 +115,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#8b5cf6" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="ExamPredictor" />
+        <meta name="application-name" content="ExamPredictor" />
+        <meta name="description" content="AI-powered exam question predictor. Upload past papers, get probable questions for your next exam." />
       </head>
       <body className="font-['Sora']">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
@@ -120,7 +128,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <BgMesh />
           <Toaster richColors closeButton position="top-center" />
           
-          {/* Header */}
           <header
             style={{
               position: "sticky",
@@ -149,18 +156,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 />
               </Link>
               
-              {/* Desktop nav */}
               <div className="hidden sm:flex items-center gap-3">
                 <NavTabs currentPath={pathname} />
                 <span className="badge-live">AI LIVE</span>
               </div>
 
-              {/* Mobile badge */}
               <span className="badge-live sm:hidden">AI LIVE</span>
             </div>
           </header>
 
-          {/* Mobile nav */}
           <div className="sm:hidden flex overflow-x-auto gap-2 px-6 py-3 scrollbar-none" style={{ scrollbarWidth: "none" }}>
             <NavTabs currentPath={pathname} />
           </div>
@@ -169,7 +173,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
 
-          {/* Footer */}
           <footer style={{ borderTop: "1px solid rgba(139,92,246,0.15)", padding: "32px 24px" }}>
             <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4" style={{ fontSize: 13, color: "var(--text-muted)" }}>
               <div>
