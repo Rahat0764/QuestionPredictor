@@ -15,6 +15,7 @@ async function groqChat(keys: string[], messages: any[]): Promise<any> {
         model: 'llama-3.1-70b-versatile',
         temperature: 0.2,
         max_tokens: 4000,
+        // JSON object mode must receive a system message indicating JSON
         response_format: { type: 'json_object' },
       });
       const content = completion.choices[0]?.message?.content || '{}';
