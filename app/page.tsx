@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import Link from "next/link"
 import { sql } from "@/lib/db"
 import { AnimatedCounter } from "@/components/animated-counter"
