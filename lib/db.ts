@@ -1,6 +1,9 @@
 import { sql } from '@vercel/postgres';
 
+let initialized = false;
+
 export async function initDB() {
+  if (initialized) return;
   await sql`
     CREATE TABLE IF NOT EXISTS subjects (
       id SERIAL PRIMARY KEY,
@@ -28,6 +31,7 @@ export async function initDB() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
   `;
+  initialized = true;
 }
 
 export { sql };
