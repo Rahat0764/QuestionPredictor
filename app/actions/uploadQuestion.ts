@@ -20,12 +20,8 @@ export async function uploadQuestion(
       return { success: false, error: 'Missing fields', results: null };
     }
 
-    const subjectRes = await sql`
-      INSERT INTO subjects (name) VALUES (${subject})
-      ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
-      RETURNING id;
-    `;
-    const subjectId = subjectRes.rows[0].id;
+    const subjectRes = await sql`INSERT INTO subjects (name) VALUES (${subject}) ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id;`;
+    const subjectId = subjectRes[0].id;
 
     const results: { url: string; text: string }[] = [];
     for (const file of files) {
@@ -42,25 +38,15 @@ export async function uploadQuestion(
 
       const extractedText = await performOCR(buffer, 'eng+ben');
 
-      await sql`
-        INSERT INTO questions (subject_id, year, text, image_url)
-        VALUES (${subjectId}, ${year}, ${extractedText}, ${blob.url})
-      `;
+      await sql`INSERT INTO questions (subject_id, year, text, image_url) VALUES (${subjectId}, ${year}, ${extractedText}, ${blob.url})`;
 
       results.push({ url: blob.url, text: extractedText.substring(0, 100) });
     }
 
-    logToTelegram(
-      `📝 Question upload success\nSubject: ${subject}\nYear: ${year}\nFiles: ${files.length}`,
-      'success'
-    ).catch(() => {});
-
+    logToTelegram(`📝 Question upload success\nSubject: ${subject}\nYear: ${year}\nFiles: ${files.length}`, 'success').catch(() => {});
     return { success: true, results };
   } catch (err: any) {
-    logToTelegram(
-      `📝 Question upload failed\nError: ${err.message}`,
-      'error'
-    ).catch(() => {});
+    logToTelegram(`📝 Question upload failed\nError: ${err.message}`, 'error').catch(() => {});
     return { success: false, error: err.message || 'Upload failed', results: null };
   }
 }
