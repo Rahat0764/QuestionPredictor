@@ -17,10 +17,12 @@ async function ocrSpace(fileBuffer: Buffer, lang = 'eng'): Promise<string> {
   for (const key of keys) {
     try {
       const formData = new FormData();
-      formData.append('file', new Blob([fileBuffer]), 'image.jpg');
-      formData.append('language', lang === 'ben' ? 'ben' : 'eng');
+      // Fix: convert Buffer to Uint8Array for Blob
+      formData.append('file', new Blob([new Uint8Array(fileBuffer)]), 'image.jpg');
+      formData.append('language', lang.includes('ben') ? 'ben' : 'eng');
       formData.append('apikey', key);
 
+      // Let axios set the correct multipart boundary
       const res = await axios.post(OCR_SPACE_URL, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -30,7 +32,7 @@ async function ocrSpace(fileBuffer: Buffer, lang = 'eng'): Promise<string> {
       else throw new Error('No text parsed');
     } catch (err: any) {
       lastError = err;
-      if (err.response?.status === 429) continue; // try next key
+      if (err.response?.status === 429) continue; // rate limit, try next key
       throw err;
     }
   }
@@ -46,11 +48,10 @@ export async function performOCR(imageBuffer: Buffer, lang = 'eng+ben'): Promise
       langPath,
     });
 
-    // If confidence is too low, fall back to OCR.space
     if (confidence < 60) {
       console.log(`Low Tesseract confidence (${confidence}), trying OCR.space...`);
       const fallbackText = await ocrSpace(imageBuffer, lang.includes('ben') ? 'ben' : 'eng');
-      return fallbackText || text; // prefer fallback if available
+      return fallbackText || text;
     }
     return text;
   } catch (err) {
