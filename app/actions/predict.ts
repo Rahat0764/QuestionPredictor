@@ -2,6 +2,7 @@
 import { sql, initDB } from '@/lib/db';
 import { getPrediction } from '@/lib/groq';
 import type { Prediction } from '@/lib/types';
+import { logToTelegram } from '@/lib/logger';
 
 export async function predictQuestions(subject: string): Promise<
   { success: true; predictions: Prediction[] } | { error: string }
@@ -51,8 +52,18 @@ Output ONLY the JSON object.`;
     if (!result || !Array.isArray(result.predictions)) {
       throw new Error('Invalid prediction format');
     }
+
+    logToTelegram(
+      `🔮 Prediction generated\nSubject: ${subject}\nPredictions: ${result.predictions.length}`,
+      'success'
+    ).catch(() => {});
+
     return { success: true, predictions: result.predictions };
   } catch (err: any) {
+    logToTelegram(
+      `🔮 Prediction failed\nSubject: ${subject}\nError: ${err.message}`,
+      'error'
+    ).catch(() => {});
     return { error: err.message };
   }
 }
