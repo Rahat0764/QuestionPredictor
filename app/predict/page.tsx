@@ -33,7 +33,7 @@ export default function PredictPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <h2 className="text-2xl font-bold">Question Predictions</h2>
+      <h2 className="text-2xl font-bold tracking-tight">Question Predictions</h2>
       <div className="flex gap-2">
         <Input
           value={subject}
@@ -45,12 +45,32 @@ export default function PredictPage() {
           {loading ? "Analyzing..." : "Predict"}
         </Button>
       </div>
-      {error && <p className="text-red-500">{error}</p>}
-      <div className="space-y-4 mt-6">
-        {predictions.map((p, i) => (
-          <PredictionCard key={i} prediction={p} index={i} />
-        ))}
-      </div>
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+      
+      {loading ? (
+        <div className="space-y-4 mt-6">
+          {[1,2,3].map(i => (
+            <div key={i} className="h-32 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-5 animate-pulse space-y-3">
+              <div className="h-4 w-20 bg-gray-200 dark:bg-white/10 rounded" />
+              <div className="h-4 w-3/4 bg-gray-200 dark:bg-white/10 rounded" />
+              <div className="h-2 w-full bg-gray-200 dark:bg-white/10 rounded" />
+            </div>
+          ))}
+        </div>
+      ) : predictions.length > 0 ? (
+        <div className="space-y-4 mt-6">
+          {predictions.map((p, i) => (
+            <PredictionCard key={i} prediction={p} index={i} />
+          ))}
+        </div>
+      ) : (
+        !error && (
+          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+            <div className="text-4xl mb-4">🔮</div>
+            <p>Enter a subject and click Predict to see AI-generated question forecasts.</p>
+          </div>
+        )
+      )}
     </div>
   )
 }
