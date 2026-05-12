@@ -3,6 +3,7 @@ import { useRef, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
 import "./globals.css"
 
@@ -92,15 +93,15 @@ function NavTabs({ currentPath }: { currentPath: string }) {
   }
 
   return (
-    <div className="nav-tabs-container w-full sm:w-auto flex justify-between sm:justify-start">
+    <div className="nav-tabs-container">
       {tabs.map(tab => (
         <Link
           key={tab.id}
           href={tab.href}
           className={`nav-tab flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-[6px] flex-1 sm:flex-none !px-1 sm:!px-[18px] !py-2 sm:!py-[7px] ${isActive(tab) ? "active" : ""}`}
         >
-          <span className="text-[18px] sm:text-[14px] leading-none">{tab.icon}</span>
-          <span className="text-[11px] sm:text-[13px] leading-none font-medium">{tab.label}</span>
+          {tab.icon}
+          {tab.label}
         </Link>
       ))}
     </div>
@@ -122,6 +123,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="ExamPredictor" />
         <meta name="application-name" content="ExamPredictor" />
         <meta name="description" content="AI-powered exam question predictor. Upload past papers, get probable questions for your next exam." />
+        <meta property="og:title" content="ExamPredictor — AI Exam Forecast" />
+        <meta property="og:description" content="Predict your next exam questions with AI" />
+        <meta property="og:image" content="/og-image.png" />
+        <meta name="twitter:card" content="summary_large_image" />
       </head>
       <body className="font-['Sora']">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
@@ -156,13 +161,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   }}
                 />
               </Link>
-              
               <div className="hidden sm:flex items-center gap-3">
                 <NavTabs currentPath={pathname} />
+                <ThemeToggle />
                 <span className="badge-live">AI LIVE</span>
               </div>
-
-              <span className="badge-live sm:hidden">AI LIVE</span>
+              <div className="flex items-center gap-3 sm:hidden">
+                <ThemeToggle />
+                <span className="badge-live">AI LIVE</span>
+              </div>
             </div>
           </header>
 
