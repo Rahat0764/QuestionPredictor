@@ -21,7 +21,9 @@ export default function UploadResources() {
     setFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)])
   }
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) setFiles(prev => [...prev, ...Array.from(e.target.files)])
+    if (e.target.files && e.target.files.length > 0) {
+      setFiles(prev => [...prev, ...Array.from(e.target.files as FileList)])
+    }
   }
   const removeFile = (index: number) => setFiles(prev => prev.filter((_, i) => i !== index))
 
