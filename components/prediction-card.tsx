@@ -1,8 +1,9 @@
 "use client"
 import { useState } from "react"
 import { Info } from "lucide-react"
+import type { Prediction } from "@/lib/types"
 
-export default function PredictionCard({ prediction, index }: { prediction: any; index: number }) {
+export default function PredictionCard({ prediction, index }: { prediction: Prediction; index: number }) {
   const [showInfo, setShowInfo] = useState(false)
 
   return (
