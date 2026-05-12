@@ -93,15 +93,15 @@ function NavTabs({ currentPath }: { currentPath: string }) {
   }
 
   return (
-    <div className="nav-tabs-container">
+    <div className="nav-tabs-container w-full sm:w-auto flex justify-between sm:justify-start">
       {tabs.map(tab => (
         <Link
           key={tab.id}
           href={tab.href}
           className={`nav-tab flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-[6px] flex-1 sm:flex-none !px-1 sm:!px-[18px] !py-2 sm:!py-[7px] ${isActive(tab) ? "active" : ""}`}
         >
-          {tab.icon}
-          {tab.label}
+          <span className="text-[18px] sm:text-[14px] leading-none">{tab.icon}</span>
+          <span className="text-[11px] sm:text-[13px] leading-none font-medium">{tab.label}</span>
         </Link>
       ))}
     </div>
@@ -129,7 +129,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="twitter:card" content="summary_large_image" />
       </head>
       <body className="font-['Sora']">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <ParticleField />
           <BgMesh />
           <Toaster richColors closeButton position="top-center" />
@@ -139,7 +139,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               position: "sticky",
               top: 0,
               zIndex: 100,
-              borderBottom: "1px solid rgba(139,92,246,0.15)",
+              borderBottom: "1px solid var(--border-color)",
               background: "rgba(5,5,8,0.85)",
               backdropFilter: "blur(20px)",
               height: 60,
@@ -181,7 +181,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
 
-          <footer style={{ borderTop: "1px solid rgba(139,92,246,0.15)", padding: "32px 24px" }}>
+          <footer style={{ borderTop: "1px solid var(--border-color)", padding: "32px 24px" }}>
             <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4" style={{ fontSize: 13, color: "var(--text-muted)" }}>
               <div>
                 Developed by{" "}
