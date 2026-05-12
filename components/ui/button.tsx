@@ -4,16 +4,21 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--violet)]/50 disabled:pointer-events-none disabled:opacity-50 font-['Sora']",
   {
     variants: {
       variant: {
-        default: "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/25 hover:opacity-90 hover:scale-[1.02]",
-        destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
-        outline: "border border-white/10 bg-transparent hover:bg-white/5 hover:text-white",
-        secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
-        ghost: "hover:bg-white/5 hover:text-white",
-        link: "text-primary underline-offset-4 hover:underline",
+        default:
+          "bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] text-white shadow-lg shadow-[#8b5cf6]/25 hover:opacity-90 hover:scale-[1.02]",
+        destructive:
+          "bg-[#f43f5e] text-white shadow-sm hover:bg-[#f43f5e]/90",
+        outline:
+          "border border-[rgba(139,92,246,0.15)] bg-transparent text-[#8b85a8] hover:bg-[#13131f] hover:text-white hover:border-[rgba(139,92,246,0.4)]",
+        secondary:
+          "bg-[#13131f] text-[#f0eeff] shadow-sm hover:bg-[#13131f]/80",
+        ghost:
+          "hover:bg-[#13131f] hover:text-white text-[#8b85a8]",
+        link: "text-[#a78bfa] underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-5 py-2",
