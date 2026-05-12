@@ -77,10 +77,10 @@ function BgMesh() {
 
 function NavTabs({ currentPath }: { currentPath: string }) {
   const tabs = [
-    { id: "home", label: "🏠 Home", href: "/" },
-    { id: "upload", label: "📤 Upload", href: "/upload/questions" },
-    { id: "predict", label: "🔮 Predict", href: "/predict" },
-    { id: "subjects", label: "📊 Subjects", href: "/subjects" }
+    { id: "home", icon: "🏠", label: "Home", href: "/" },
+    { id: "upload", icon: "📤", label: "Upload", href: "/upload/questions" },
+    { id: "predict", icon: "🔮", label: "Predict", href: "/predict" },
+    { id: "subjects", icon: "📊", label: "Subjects", href: "/subjects" }
   ]
 
   const isActive = (tab: typeof tabs[0]) => {
@@ -92,14 +92,15 @@ function NavTabs({ currentPath }: { currentPath: string }) {
   }
 
   return (
-    <div className="nav-tabs-container">
+    <div className="nav-tabs-container w-full sm:w-auto flex justify-between sm:justify-start">
       {tabs.map(tab => (
         <Link
           key={tab.id}
           href={tab.href}
-          className={`nav-tab ${isActive(tab) ? "active" : ""}`}
+          className={`nav-tab flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-[6px] flex-1 sm:flex-none !px-1 sm:!px-[18px] !py-2 sm:!py-[7px] ${isActive(tab) ? "active" : ""}`}
         >
-          {tab.label}
+          <span className="text-[18px] sm:text-[14px] leading-none">{tab.icon}</span>
+          <span className="text-[11px] sm:text-[13px] leading-none font-medium">{tab.label}</span>
         </Link>
       ))}
     </div>
@@ -165,7 +166,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </header>
 
-          <div className="sm:hidden flex overflow-x-auto gap-2 px-6 py-3 scrollbar-none" style={{ scrollbarWidth: "none" }}>
+          <div className="sm:hidden flex w-full px-4 py-3">
             <NavTabs currentPath={pathname} />
           </div>
 
