@@ -11,14 +11,14 @@ const config = {
   theme: {
     extend: {
       colors: {
-        border: "hsl(var(--border))",
+        border: "hsl(var(--border) / var(--border-opacity, 0.15))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
+        background: "#050508",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "#8b5cf6",
+          foreground: "#ffffff",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -49,6 +49,10 @@ const config = {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        sans: ["Sora", "Inter", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
       },
     },
   },
