@@ -10,6 +10,7 @@ import { savePredictionToHistory, getPredictionHistory } from "@/lib/localStore"
 import { exportPredictionsAsPDF } from "@/lib/export"
 import type { Prediction } from "@/lib/types"
 import Link from "next/link"
+import { toast } from "sonner"
 
 const QUICK_SUBJECTS = ["Physics", "Chemistry", "Mathematics", "Biology", "Bangla"]
 
@@ -24,7 +25,7 @@ function PredictContent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [history, setHistory] = useState<ReturnType<typeof getPredictionHistory>>([])
-  const [showExport, setShowExport] = useState(false)
+  const [isCached, setIsCached] = useState(false)
 
   const years = Array.from({ length: 35 }, (_, i) => 1990 + i)
 
@@ -46,7 +47,7 @@ function PredictContent() {
     setLoading(true)
     setError("")
     setPredictions([])
-    setShowExport(false)
+    setIsCached(false)
     try {
       const res = await predictQuestions(subject.trim(), targetYear)
       if ('error' in res && res.error) {
@@ -55,7 +56,10 @@ function PredictContent() {
         setPredictions(res.predictions)
         savePredictionToHistory(subject.trim(), targetYear)
         setHistory(getPredictionHistory())
-        setShowExport(true)
+        if (res.cached) {
+          setIsCached(true)
+          toast.info("Showing cached result")
+        }
       } else {
         setError("Unexpected response")
       }
@@ -73,7 +77,7 @@ function PredictContent() {
   const copyShareLink = () => {
     const url = `${window.location.origin}/predict?subject=${encodeURIComponent(subject)}&year=${targetYear}`
     navigator.clipboard.writeText(url)
-    alert("Link copied! Share with your friends.")
+    toast.success("Link copied! Share with your friends.")
   }
 
   return (
@@ -202,6 +206,11 @@ function PredictContent() {
 
       {!loading && predictions.length > 0 && (
         <div>
+          {isCached && (
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8, textAlign: "center" }}>
+              ⚡ Served from cache (valid for 7 days)
+            </div>
+          )}
           <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
             <div style={{ fontSize: 14, color: "var(--text-muted)" }}>
               <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>{predictions.length}</span>
@@ -222,7 +231,7 @@ function PredictContent() {
           </div>
           <div id="predictions-container" className="space-y-3.5">
             {predictions.map((p, i) => (
-              <PredictionCard key={i} prediction={p} index={i} />
+              <PredictionCard key={i} prediction={p} index={i} subject={subject} targetYear={targetYear} />
             ))}
           </div>
         </div>
