@@ -1,3 +1,4 @@
+// lib/cache.ts
 const cache = new Map<string, { data: any; timestamp: number }>();
 const TTL = 7 * 24 * 60 * 60 * 1000; // 7 দিন
 
