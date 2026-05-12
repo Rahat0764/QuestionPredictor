@@ -1,10 +1,13 @@
 export const dynamic = 'force-dynamic';
 
 import Link from "next/link"
-import { sql } from "@/lib/db"
+import { sql, initDB } from "@/lib/db"
 import { AnimatedCounter } from "@/components/animated-counter"
 
 export default async function Home() {
+  // Make sure tables exist
+  await initDB();
+
   // Fetch real counts
   const subjectsCount = await sql`SELECT COUNT(*)::int as count FROM subjects`
   const questionsCount = await sql`SELECT COUNT(*)::int as count FROM questions`
