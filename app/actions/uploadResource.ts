@@ -4,36 +4,47 @@ import { sql, initDB } from '@/lib/db';
 import { performOCR } from '@/lib/ocr';
 import pdfParse from 'pdf-parse';
 
-export async function uploadResource(formData: FormData) {
-  await initDB();
+export async function uploadResource(
+  prevState: any,
+  formData: FormData
+): Promise<
+  { error: string; success?: false; results?: never } |
+  { success: true; count: number; results: { url: string; text: string }[]; error?: never }
+> {
+  try {
+    await initDB();
 
-  const subject = formData.get('subject') as string;
-  const name = formData.get('name') as string;
-  const files = formData.getAll('files') as File[];
+    const subject = formData.get('subject') as string;
+    const name = formData.get('name') as string;
+    const files = formData.getAll('files') as File[];
 
-  if (files.length === 0) return { error: 'No files' };
+    if (files.length === 0) return { error: 'No files' };
 
-  const results = [];
-  for (const file of files) {
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const blob = await put(file.name, buffer, {
-      access: 'public',
-      contentType: file.type,
-    });
+    const results: { url: string; text: string }[] = [];
+    for (const file of files) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const blob = await put(file.name, buffer, {
+        access: 'public',
+        contentType: file.type,
+      });
 
-    let text = '';
-    if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-      const pdfData = await pdfParse(buffer);
-      text = pdfData.text || '';
-    } else {
-      text = await performOCR(buffer, 'eng+ben');
+      let text = '';
+      if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+        const pdfData = await pdfParse(buffer);
+        text = pdfData.text || '';
+      } else {
+        text = await performOCR(buffer, 'eng+ben');
+      }
+
+      await sql`
+        INSERT INTO resources (subject_name, name, text, file_url, type)
+        VALUES (${subject || null}, ${name || file.name}, ${text}, ${blob.url}, ${file.type.includes('pdf') ? 'pdf' : 'image'})
+      `;
+
+      results.push({ url: blob.url, text: text.substring(0, 100) });
     }
-
-    await sql`
-      INSERT INTO resources (subject_name, name, text, file_url, type)
-      VALUES (${subject || null}, ${name || file.name}, ${text}, ${blob.url}, ${file.type.includes('pdf') ? 'pdf' : 'image'})
-    `;
-    results.push({ url: blob.url, text: text.substring(0, 100) });
+    return { success: true, count: files.length, results };
+  } catch (err: any) {
+    return { error: err.message || 'Upload failed' };
   }
-  return { success: true, count: files.length, results };
 }
