@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { predictQuestions } from "@/app/actions/predict"
 import PredictionCard from "@/components/prediction-card"
+import type { Prediction } from "@/lib/types"
 
 export default function PredictPage() {
   const [subject, setSubject] = useState("")
-  const [predictions, setPredictions] = useState<any[]>([])
+  const [predictions, setPredictions] = useState<Prediction[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
