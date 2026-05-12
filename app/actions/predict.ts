@@ -2,8 +2,16 @@
 import { sql, initDB } from '@/lib/db';
 import { getPrediction } from '@/lib/groq';
 
+interface Prediction {
+  question_text: string;
+  probability: number;
+  explanation: string;
+  historical_years: number[];
+  similar_questions: string[];
+}
+
 export async function predictQuestions(subject: string): Promise<
-  { success: true; predictions: any[] } | { error: string }
+  { success: true; predictions: Prediction[] } | { error: string }
 > {
   try {
     await initDB();
@@ -14,11 +22,13 @@ export async function predictQuestions(subject: string): Promise<
     const qres = await sql`
       SELECT year, text FROM questions
       WHERE subject_id = ${subjectId}
-      ORDER BY year ASC
+      ORDER BY year DESC
+      LIMIT 50
     `;
     const rres = await sql`
       SELECT text FROM resources
       WHERE subject_name = ${subject} OR subject_name IS NULL
+      LIMIT 20
     `;
 
     const questionsList = qres.rows.map(r => `Year ${r.year}: ${r.text}`).join('\n\n');
@@ -26,29 +36,29 @@ export async function predictQuestions(subject: string): Promise<
 
     const prompt = `You are an exam prediction expert. Analyze the provided previous years' exam questions and study materials for the subject "${subject}". 
 Identify recurring topics, patterns, and predict the most likely questions for the upcoming exam (2027). 
-For each candidate question, output a JSON array where each element contains:
-- "question_text": a string (the probable question as it might appear)
-- "probability": a number (0-100)
-- "explanation": reasoning with historical years it appeared and why it's likely
-- "historical_years": array of years it appeared
-- "similar_questions": array of strings (variant questions with value changes)
+Output a JSON object with a key "predictions" containing an array of objects. Each object must have:
+- "question_text": string
+- "probability": number (0-100)
+- "explanation": string (include historical years and reasoning)
+- "historical_years": array of numbers
+- "similar_questions": array of strings
 
 Previous questions:
 ${questionsList || 'None'}
-
 Study resources:
 ${resourcesText || 'None'}
-
-Output ONLY valid JSON array.`;
+Output ONLY the JSON object.`;
 
     const messages = [
       { role: 'system', content: 'You are a helpful assistant that outputs only JSON.' },
       { role: 'user', content: prompt }
     ];
 
-    const prediction = await getPrediction(messages);
-    if (!Array.isArray(prediction)) throw new Error('Invalid JSON response');
-    return { success: true, predictions: prediction };
+    const result = await getPrediction(messages);
+    if (!result || !Array.isArray(result.predictions)) {
+      throw new Error('Invalid prediction format');
+    }
+    return { success: true, predictions: result.predictions };
   } catch (err: any) {
     return { error: err.message };
   }
