@@ -3,7 +3,17 @@ import { useState } from "react"
 import type { Prediction } from "@/lib/types"
 import { recordFeedback } from "@/app/actions/feedback"
 
-export default function PredictionCard({ prediction, index }: { prediction: Prediction; index: number }) {
+export default function PredictionCard({
+  prediction,
+  index,
+  subject,
+  targetYear,
+}: {
+  prediction: Prediction
+  index: number
+  subject: string
+  targetYear: number
+}) {
   const [expanded, setExpanded] = useState(false)
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
   const [feedbackPending, setFeedbackPending] = useState(false)
@@ -37,8 +47,8 @@ export default function PredictionCard({ prediction, index }: { prediction: Pred
         predictionIndex: index,
         questionText: prediction.question_text,
         vote,
-        subject: '',   // Not immediately available, but can be passed from parent; we'll use placeholder for now
-        targetYear: 0, // same
+        subject,
+        targetYear,
       })
       setFeedback(vote)
     } catch (err) {
