@@ -1,6 +1,7 @@
 import Tesseract from 'tesseract.js';
 import path from 'path';
 import axios from 'axios';
+import { logToTelegram } from './logger';
 
 const OCR_SPACE_URL = 'https://api.ocr.space/parse/image';
 
@@ -15,24 +16,33 @@ async function ocrSpace(fileBuffer: Buffer, lang = 'eng'): Promise<string> {
 
   let lastError;
   for (const key of keys) {
+    const maskedKey = key.slice(0, 6) + '...';
     try {
       const formData = new FormData();
-      // Fix: convert Buffer to Uint8Array for Blob
       formData.append('file', new Blob([new Uint8Array(fileBuffer)]), 'image.jpg');
       formData.append('language', lang.includes('ben') ? 'ben' : 'eng');
       formData.append('apikey', key);
 
-      // Let axios set the correct multipart boundary
       const res = await axios.post(OCR_SPACE_URL, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       const parsed = res.data?.ParsedResults?.[0]?.ParsedText;
-      if (parsed) return parsed.trim();
-      else throw new Error('No text parsed');
+      if (parsed) {
+        logToTelegram(
+          `🖼️ OCR.space success\nKey: ${maskedKey}\nLanguage: ${lang}`,
+          'success'
+        ).catch(() => {});
+        return parsed.trim();
+      }
+      throw new Error('No text parsed');
     } catch (err: any) {
       lastError = err;
-      if (err.response?.status === 429) continue; // rate limit, try next key
+      logToTelegram(
+        `🖼️ OCR.space failed\nKey: ${maskedKey}\nError: ${err.message}`,
+        'warning'
+      ).catch(() => {});
+      if (err.response?.status === 429) continue;
       throw err;
     }
   }
@@ -49,13 +59,23 @@ export async function performOCR(imageBuffer: Buffer, lang = 'eng+ben'): Promise
     });
 
     if (confidence < 60) {
-      console.log(`Low Tesseract confidence (${confidence}), trying OCR.space...`);
+      logToTelegram(
+        `🔤 Tesseract low confidence (${confidence}%), falling back to OCR.space`,
+        'warning'
+      ).catch(() => {});
       const fallbackText = await ocrSpace(imageBuffer, lang.includes('ben') ? 'ben' : 'eng');
       return fallbackText || text;
     }
+    logToTelegram(
+      `🔤 Tesseract success, confidence: ${confidence}%`,
+      'success'
+    ).catch(() => {});
     return text;
   } catch (err) {
-    console.error('Tesseract failed, falling back to OCR.space', err);
+    logToTelegram(
+      `🔤 Tesseract error: ${(err as any).message}, using OCR.space`,
+      'error'
+    ).catch(() => {});
     return await ocrSpace(imageBuffer, lang.includes('ben') ? 'ben' : 'eng');
   }
 }
