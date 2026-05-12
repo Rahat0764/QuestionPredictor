@@ -1,10 +1,10 @@
 "use client"
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { predictQuestions } from "@/app/actions/predict"
 import PredictionCard from "@/components/prediction-card"
 import type { Prediction } from "@/lib/types"
+
+const QUICK_SUBJECTS = ["Physics", "Chemistry", "Mathematics", "Biology", "Bangla"]
 
 export default function PredictPage() {
   const [subject, setSubject] = useState("")
@@ -14,17 +14,14 @@ export default function PredictPage() {
   const [error, setError] = useState("")
 
   const handlePredict = async () => {
+    if (!subject.trim()) return
     setLoading(true)
     setError("")
     try {
-      const res = await predictQuestions(subject, targetYear)
-      if ('error' in res && res.error) {
-        setError(res.error)
-      } else if ('predictions' in res) {
-        setPredictions(res.predictions)
-      } else {
-        setError("Unexpected response")
-      }
+      const res = await predictQuestions(subject.trim(), targetYear)
+      if ('error' in res && res.error) setError(res.error)
+      else if ('predictions' in res) setPredictions(res.predictions)
+      else setError("Unexpected response")
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -33,55 +30,61 @@ export default function PredictPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 pt-2">
-      {/* Header */}
+    <div className="max-w-3xl mx-auto space-y-8">
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-500 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
-          AI Exam Forecast
-        </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Select a subject and target year to generate smart predictions
-        </p>
+        <h2 className="text-3xl font-extrabold gradient-text">AI Exam Forecast</h2>
+        <p className="text-sm text-zinc-400">Select a subject and target year to generate smart predictions</p>
       </div>
 
-      {/* Form Card */}
-      <div className="backdrop-blur-xl bg-white/60 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl shadow-gray-500/10 dark:shadow-none p-6 space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Subject input */}
-          <div className="md:col-span-2">
-            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Subject
-            </label>
-            <Input
+      <div className="glass p-6 space-y-4">
+        {/* Quick subject chips */}
+        <div>
+          <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Quick Select</label>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {QUICK_SUBJECTS.map(s => (
+              <button
+                key={s}
+                onClick={() => setSubject(s)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors
+                  ${subject === s 
+                    ? "bg-violet-500/20 border-violet-500/40 text-violet-300" 
+                    : "bg-white/5 border-white/10 text-zinc-400 hover:border-white/20"}`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Subject</label>
+            <input
+              type="text"
               value={subject}
-              onChange={(e) => setSubject(e.target.value)}
+              onChange={e => setSubject(e.target.value)}
               placeholder="e.g., Physics, Bangla"
-              className="mt-1 border-gray-300 dark:border-white/10 bg-white/50 dark:bg-white/5 focus-visible:ring-indigo-400 dark:focus-visible:ring-indigo-400"
+              className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
             />
           </div>
-
-          {/* Target Year */}
           <div>
-            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Target Year
-            </label>
+            <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Target Year</label>
             <select
               value={targetYear}
-              onChange={(e) => setTargetYear(parseInt(e.target.value))}
-              className="mt-1 w-full rounded-lg border border-gray-300 dark:border-white/10 bg-white/50 dark:bg-white/5 px-3 py-2 text-sm backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:focus:ring-indigo-400"
+              onChange={e => setTargetYear(Number(e.target.value))}
+              className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500/50 appearance-none cursor-pointer"
             >
-              {Array.from({ length: 38 }, (_, i) => {
-                const year = 1990 + i
-                return <option key={year} value={year}>{year}</option>
-              })}
+              {Array.from({ length: 50 }, (_, i) => 1990 + i).map(y => (
+                <option key={y} value={y} className="bg-gray-900">{y}</option>
+              ))}
             </select>
           </div>
         </div>
 
-        <Button
+        <button
           onClick={handlePredict}
-          disabled={loading}
-          className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 hover:opacity-90 text-white font-medium py-2.5 rounded-xl shadow-lg shadow-indigo-500/25 dark:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading || !subject.trim()}
+          className="btn-premium w-full"
         >
           {loading ? (
             <span className="flex items-center gap-2">
@@ -92,45 +95,42 @@ export default function PredictPage() {
               Analyzing...
             </span>
           ) : (
-            "Generate Predictions"
+            "✨ Generate Predictions"
           )}
-        </Button>
+        </button>
 
         {error && (
-          <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/20 rounded-lg text-red-600 dark:text-red-400 text-sm">
-            {error}
-          </div>
+          <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400 text-sm">{error}</div>
         )}
       </div>
 
-      {/* Results Area */}
-      {loading ? (
-        <div className="space-y-4 mt-6">
-          {[1, 2, 3].map(i => (
-            <div
-              key={i}
-              className="rounded-xl border border-gray-200 dark:border-white/10 bg-white/40 dark:bg-white/5 backdrop-blur-sm p-5 animate-pulse space-y-3"
-            >
-              <div className="h-4 w-20 bg-gray-200 dark:bg-gray-700 rounded-full" />
-              <div className="h-4 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
-              <div className="h-2 w-full bg-gray-200 dark:bg-gray-700 rounded" />
+      {/* Results area */}
+      {loading && (
+        <div className="space-y-4">
+          {[1,2,3].map(i => (
+            <div key={i} className="glass p-5 space-y-3 animate-pulse">
+              <div className="h-4 w-20 skeleton rounded-full" />
+              <div className="h-4 w-3/4 skeleton rounded" />
+              <div className="h-2 w-full skeleton rounded" />
             </div>
           ))}
         </div>
-      ) : predictions.length > 0 ? (
-        <div className="space-y-4 mt-6">
+      )}
+
+      {!loading && predictions.length > 0 && (
+        <div className="space-y-4">
           {predictions.map((p, i) => (
             <PredictionCard key={i} prediction={p} index={i} />
           ))}
         </div>
-      ) : (
-        !error && (
-          <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-            <div className="text-5xl mb-4">🔮</div>
-            <p className="text-lg font-medium">No predictions yet</p>
-            <p className="text-sm">Fill in the form and let AI analyze past papers</p>
-          </div>
-        )
+      )}
+
+      {!loading && !error && predictions.length === 0 && (
+        <div className="text-center py-16 text-zinc-500">
+          <div className="text-5xl mb-4">🔮</div>
+          <p className="text-lg font-medium">Ready to predict</p>
+          <p className="text-sm">Select a subject and click Generate Predictions.</p>
+        </div>
       )}
     </div>
   )
