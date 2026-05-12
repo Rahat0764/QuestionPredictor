@@ -1,8 +1,8 @@
 "use client"
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "@/components/theme-provider"
-import { ThemeToggle } from "@/components/theme-toggle"
 import Link from "next/link"
 import "./globals.css"
 
@@ -14,12 +14,12 @@ function ParticleField() {
     const ctx = canvas.getContext("2d")!
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
-    const particles = Array.from({ length: 50 }, () => ({
+    const particles = Array.from({ length: 55 }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
       r: Math.random() * 1.5 + 0.3,
-      dx: (Math.random() - 0.5) * 0.3,
-      dy: (Math.random() - 0.5) * 0.3,
+      dx: (Math.random() - 0.5) * 0.35,
+      dy: (Math.random() - 0.5) * 0.35,
       opacity: Math.random() * 0.5 + 0.1,
     }))
     let raf: number
@@ -54,10 +54,59 @@ function ParticleField() {
     window.addEventListener("resize", resize)
     return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize) }
   }, [])
-  return <canvas ref={canvasRef} style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.6 }} />
+  return <canvas ref={canvasRef} style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.7 }} />
+}
+
+function BgMesh() {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: "none",
+        background: `
+          radial-gradient(ellipse 80% 50% at 20% 10%, rgba(99,102,241,0.08) 0%, transparent 60%),
+          radial-gradient(ellipse 60% 40% at 80% 80%, rgba(139,92,246,0.07) 0%, transparent 60%),
+          radial-gradient(ellipse 40% 30% at 50% 50%, rgba(236,72,153,0.04) 0%, transparent 60%)
+        `,
+      }}
+    />
+  )
+}
+
+function NavTabs({ currentPath }: { currentPath: string }) {
+  const tabs = [
+    { id: "home", label: "🏠 Home", href: "/" },
+    { id: "upload", label: "📤 Upload", href: "/upload/questions" },
+    { id: "predict", label: "🔮 Predict", href: "/predict" },
+  ]
+
+  const isActive = (tab: typeof tabs[0]) => {
+    if (tab.id === "home") return currentPath === "/"
+    if (tab.id === "upload") return currentPath.startsWith("/upload")
+    if (tab.id === "predict") return currentPath.startsWith("/predict")
+    return false
+  }
+
+  return (
+    <div className="nav-tabs-container">
+      {tabs.map(tab => (
+        <Link
+          key={tab.id}
+          href={tab.href}
+          className={`nav-tab ${isActive(tab) ? "active" : ""}`}
+        >
+          {tab.label}
+        </Link>
+      ))}
+    </div>
+  )
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -68,38 +117,69 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-['Sora']">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
           <ParticleField />
+          <BgMesh />
           <Toaster richColors closeButton position="top-center" />
-          <header className="sticky top-0 z-50 border-b border-white/10 bg-black/60 backdrop-blur-2xl">
-            <div className="max-w-6xl mx-auto flex items-center justify-between h-14 px-4">
-              <Link href="/" className="flex items-center gap-2">
-                <span className="text-xl font-extrabold gradient-text">ExamPredictor</span>
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          
+          {/* Header */}
+          <header
+            style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 100,
+              borderBottom: "1px solid rgba(139,92,246,0.15)",
+              background: "rgba(5,5,8,0.85)",
+              backdropFilter: "blur(20px)",
+              height: 60,
+            }}
+          >
+            <div className="max-w-6xl mx-auto flex items-center justify-between h-full px-6">
+              <Link href="/" className="flex items-center gap-2 no-underline">
+                <span className="text-[20px] font-extrabold tracking-[-0.5px] gradient-text-logo">
+                  ExamPredictor
                 </span>
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: "var(--violet)",
+                    animation: "livePulse 2s infinite",
+                  }}
+                />
               </Link>
-              <div className="flex items-center gap-3">
-                <nav className="hidden sm:flex items-center gap-1 text-sm">
-                  <Link href="/" className="px-3 py-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors">Home</Link>
-                  <Link href="/upload/questions" className="px-3 py-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors">Upload</Link>
-                  <Link href="/predict" className="px-3 py-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors">Predict</Link>
-                </nav>
-                <ThemeToggle />
+              
+              {/* Desktop nav */}
+              <div className="hidden sm:flex items-center gap-3">
+                <NavTabs currentPath={pathname} />
+                <span className="badge-live">AI LIVE</span>
               </div>
+
+              {/* Mobile badge */}
+              <span className="badge-live sm:hidden">AI LIVE</span>
             </div>
           </header>
-          <main className="relative z-10 max-w-6xl mx-auto p-4 pt-8 pb-20">
+
+          {/* Mobile nav */}
+          <div className="sm:hidden flex overflow-x-auto gap-2 px-6 py-3 scrollbar-none" style={{ scrollbarWidth: "none" }}>
+            <NavTabs currentPath={pathname} />
+          </div>
+
+          <main className="relative z-10 max-w-6xl mx-auto px-6 py-8 pb-20">
             {children}
           </main>
-          <footer className="border-t border-white/10 py-8 px-4">
-            <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-zinc-500">
+
+          {/* Footer */}
+          <footer style={{ borderTop: "1px solid rgba(139,92,246,0.15)", padding: "32px 24px" }}>
+            <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4" style={{ fontSize: 13, color: "var(--text-muted)" }}>
               <div>
                 Developed by{" "}
                 <a
                   href="https://linkedin.com/in/RahatAhmedX"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-violet-400 hover:text-violet-300 underline decoration-dotted underline-offset-2"
+                  style={{ color: "var(--violet-light)", textDecoration: "underline", textDecorationStyle: "dotted", textUnderlineOffset: 2 }}
+                  className="hover:opacity-80"
                 >
                   Rahat
                 </a>
@@ -109,9 +189,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   href="https://github.com/Rahat0764/QuestionPredictor"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-zinc-500 hover:text-white transition-colors"
+                  style={{ color: "var(--text-muted)" }}
+                  className="hover:text-white transition-colors flex items-center gap-1"
                 >
-                  <svg className="w-5 h-5 inline-block mr-1" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.73.083-.73 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0Z"/></svg>
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.73.083-.73 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12 24 5.37 18.63 0 12 0Z"/></svg>
                   GitHub Repo
                 </a>
               </div>
