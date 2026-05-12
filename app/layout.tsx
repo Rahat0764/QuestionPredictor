@@ -14,14 +14,18 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100`}>
+      <body className={`${inter.className} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <Toaster richColors closeButton />
-          <header className="border-b border-gray-200 dark:border-gray-700 p-4 flex justify-between items-center sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur z-50">
-            <h1 className="text-xl font-bold">ExamPredictor</h1>
-            <ThemeToggle />
+          <Toaster richColors closeButton position="top-center" />
+          <header className="sticky top-0 z-50 border-b border-gray-200 dark:border-white/10 bg-white/70 dark:bg-gray-950/70 backdrop-blur-xl">
+            <div className="max-w-6xl mx-auto flex items-center justify-between h-14 px-4">
+              <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+                ExamPredictor
+              </h1>
+              <ThemeToggle />
+            </div>
           </header>
-          <main className="container mx-auto max-w-4xl p-4">
+          <main className="max-w-6xl mx-auto p-4 pt-6">
             {children}
           </main>
         </ThemeProvider>
