@@ -6,7 +6,6 @@ import { sql, initDB } from "@/lib/db"
 export default async function SubjectsPage() {
   await initDB()
   
-  // Fetch subjects with their question count and resources count
   const rows = await sql`
     SELECT 
       s.id, s.name,
