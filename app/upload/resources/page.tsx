@@ -13,19 +13,20 @@ export default function UploadResources() {
   const [result, setResult] = useState<UploadState | null>(null)
   const [progress, setProgress] = useState(0)
   const progressInterval = useRef<NodeJS.Timeout | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (isPending) {
       setProgress(0)
       progressInterval.current = setInterval(() => {
         setProgress(prev => {
-          if (prev >= 90) {
+          if (prev >= 95) {
             if (progressInterval.current) clearInterval(progressInterval.current)
-            return 90
+            return 95
           }
-          return prev + Math.random() * 15
+          return prev + Math.random() * 20
         })
-      }, 200)
+      }, 150)
     } else {
       if (progressInterval.current) clearInterval(progressInterval.current)
       setProgress(0)
@@ -46,6 +47,7 @@ export default function UploadResources() {
     if (e.target.files && e.target.files.length > 0) {
       setFiles(prev => [...prev, ...Array.from(e.target.files as FileList)])
     }
+    e.target.value = ""
   }
   const removeFile = (index: number) => setFiles(prev => prev.filter((_, i) => i !== index))
 
@@ -60,15 +62,14 @@ export default function UploadResources() {
 
     startTransition(async () => {
       const state = await uploadResource(null as any, formData)
-      setResult(state)
       setProgress(100)
+      setResult(state)
       if (state.success) setFiles([])
     })
   }
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
-      {/* Header */}
       <div>
         <Link
           href="/"
@@ -91,11 +92,10 @@ export default function UploadResources() {
           Upload Study Resources
         </h2>
         <p style={{ fontSize: 14, color: "var(--text-muted)" }}>
-          Upload textbooks or notes as PDF or images for deeper AI analysis.
+          Upload textbooks or notes as PDF or images. OCR runs when you generate predictions.
         </p>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="glass-card" style={{ padding: "28px" }}>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div className="flex flex-col gap-2">
@@ -129,21 +129,22 @@ export default function UploadResources() {
           </div>
         </div>
 
-        {/* Drop zone */}
         <div
           className={`drop-zone-base mb-4 ${dragging ? "drag-over" : ""}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={() => document.getElementById("r-files-input")?.click()}
+          onClick={() => inputRef.current?.click()}
         >
           <input
+            ref={inputRef}
             id="r-files-input"
             type="file"
             multiple
             accept="image/*,.pdf"
-            className="absolute inset-0 opacity-0 cursor-pointer"
+            className="hidden"
             onChange={handleFileChange}
+            onClick={(e) => e.stopPropagation()}
           />
           <div style={{ fontSize: 36, marginBottom: 10 }}>
             {files.length > 0 ? "📁" : "☁️"}
@@ -190,12 +191,11 @@ export default function UploadResources() {
           )}
         </div>
 
-        {/* Progress bar */}
         {isPending && (
           <div className="mb-4">
             <div className="flex justify-between mb-1.5" style={{ fontSize: 12, color: "var(--text-muted)" }}>
               <span>
-                {progress < 40 ? "🔄 Uploading files…" : progress < 80 ? "🔤 Extracting text…" : "✨ Finalizing…"}
+                {progress < 50 ? "🔄 Uploading files…" : "✨ Storing securely…"}
               </span>
               <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                 {Math.round(progress)}%
@@ -233,7 +233,7 @@ export default function UploadResources() {
               Processing…
             </>
           ) : (
-            "⬆️  Upload & Extract Text"
+            "⬆️  Upload & Store"
           )}
         </button>
 
@@ -271,13 +271,12 @@ export default function UploadResources() {
           >
             <span style={{ fontSize: 22, flexShrink: 0 }}>✅</span>
             <span style={{ fontSize: 13, color: "#6ee7b7" }}>
-              {result.results?.length} resource(s) uploaded successfully! AI will now use this for deeper predictions.
+              {result.results?.length} resource(s) uploaded! OCR will run during prediction.
             </span>
           </div>
         )}
       </form>
 
-      {/* Tips */}
       <div className="glass-card" style={{ padding: "20px 24px" }}>
         <div
           style={{
