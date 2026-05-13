@@ -1,3 +1,4 @@
+// tsconfig.json (typo fix)
 {
   "compilerOptions": {
     "target": "es5",
