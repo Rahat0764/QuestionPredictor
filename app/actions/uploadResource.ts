@@ -1,7 +1,6 @@
 'use server'
 import { put } from '@vercel/blob';
 import { sql, initDB } from '@/lib/db';
-import { performOCR } from '@/lib/ocr';
 import pdfParse from 'pdf-parse';
 import type { UploadState } from '@/lib/types';
 import { logToTelegram } from '@/lib/logger';
@@ -39,7 +38,8 @@ export async function uploadResource(
         const pdfData = await pdfParse(buffer);
         text = pdfData.text || '';
       } else {
-        text = await performOCR(buffer, 'eng+ben');
+        // ইমেজ — OCR ছাড়া সংরক্ষণ
+        text = '';
       }
 
       await sql`
@@ -47,7 +47,7 @@ export async function uploadResource(
         VALUES (${subject}, ${name}, ${text}, ${blob.url}, ${file.type.includes('pdf') ? 'pdf' : 'image'})
       `;
 
-      results.push({ url: blob.url, text: text.substring(0, 100) });
+      results.push({ url: blob.url, text: text ? text.substring(0, 100) : "Stored. OCR will run on prediction." });
     }
 
     logToTelegram(
