@@ -1,3 +1,4 @@
+// app/layout.tsx
 "use client"
 import { useRef, useEffect } from "react"
 import { usePathname } from "next/navigation"
@@ -140,7 +141,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               top: 0,
               zIndex: 100,
               borderBottom: "1px solid var(--border-color)",
-              background: "rgba(5,5,8,0.85)",
+              background: "hsl(var(--background) / 0.85)",
               backdropFilter: "blur(20px)",
               height: 60,
             }}
