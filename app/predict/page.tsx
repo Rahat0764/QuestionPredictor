@@ -14,7 +14,18 @@ import { toast } from "sonner"
 
 const QUICK_SUBJECTS = ["Physics", "Chemistry", "Mathematics", "Biology", "Bangla"]
 
-// Inner component that uses useSearchParams
+const LOADING_MESSAGES = [
+  "Initializing AI engines...",
+  "Scanning uploaded question papers...",
+  "Extracting text via optical character recognition...",
+  "Analyzing historical exam patterns...",
+  "Cross-referencing topic frequency...",
+  "Detecting recurring themes across years...",
+  "Running predictive probability models...",
+  "Finalizing confidence scores...",
+  "Almost there, formatting predictions..."
+]
+
 function PredictContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -26,10 +37,10 @@ function PredictContent() {
   const [error, setError] = useState("")
   const [history, setHistory] = useState<ReturnType<typeof getPredictionHistory>>([])
   const [isCached, setIsCached] = useState(false)
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0)
 
   const years = Array.from({ length: new Date().getFullYear() - 1990 + 2 }, (_, i) => 1990 + i)
 
-  // Update URL when subject/year change
   useEffect(() => {
     const params = new URLSearchParams()
     params.set("subject", subject.trim())
@@ -37,10 +48,22 @@ function PredictContent() {
     router.replace(`/predict?${params.toString()}`, { scroll: false })
   }, [subject, targetYear, router])
 
-  // Load local history
   useEffect(() => {
     setHistory(getPredictionHistory())
   }, [])
+
+  // সাইক্লিং লোডিং মেসেজ
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    if (loading) {
+      interval = setInterval(() => {
+        setLoadingMsgIdx(prev => (prev + 1) % LOADING_MESSAGES.length)
+      }, 2200)
+    } else {
+      setLoadingMsgIdx(0)
+    }
+    return () => clearInterval(interval)
+  }, [loading])
 
   const handlePredict = async () => {
     if (!subject.trim()) return
@@ -148,10 +171,12 @@ function PredictContent() {
           className="btn-primary-glow w-full py-3 text-sm"
         >
           {loading ? (
-            <>
-              <span className="inline-block animate-spin">⟳</span>
-              Analyzing patterns…
-            </>
+            <div className="flex flex-col items-center gap-1">
+              <div className="flex items-center gap-2">
+                <span className="inline-block animate-spin">⟳</span>
+                <span>{LOADING_MESSAGES[loadingMsgIdx]}</span>
+              </div>
+            </div>
           ) : (
             "✨ Generate Predictions"
           )}
@@ -167,7 +192,6 @@ function PredictContent() {
           </div>
         )}
 
-        {/* Recent history */}
         {history.length > 0 && !loading && predictions.length === 0 && (
           <div style={{ marginTop: 20 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginBottom: 8 }}>
@@ -253,7 +277,6 @@ function PredictContent() {
   )
 }
 
-// Wrapper with Suspense boundary
 export default function PredictPage() {
   return (
     <Suspense
