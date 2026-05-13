@@ -1,3 +1,4 @@
+// app/actions/predict.ts (সংশোধিত, ক্যাশিং ও প্যারালাল OCR সহ)
 'use server'
 import { headers } from 'next/headers';
 import { sql, initDB } from '@/lib/db';
@@ -49,21 +50,23 @@ export async function predictQuestions(
       LIMIT 50
     `;
 
-    // On-demand OCR: যাদের টেক্সট ফাঁকা তাদের ইমেজ থেকে OCR করো
-    for (const q of qres) {
-      if ((!q.text || q.text.trim() === '') && q.image_url) {
-        try {
-          const imgResponse = await fetch(q.image_url);
-          if (!imgResponse.ok) continue;
-          const imgBuffer = Buffer.from(await imgResponse.arrayBuffer());
-          const extractedText = await performOCR(imgBuffer, 'eng+ben');
-          await sql`UPDATE questions SET text = ${extractedText} WHERE id = ${q.id}`;
-          q.text = extractedText;
-        } catch (e) {
-          console.error("OCR failed for image:", q.image_url);
+    // Parallel OCR for missing text
+    await Promise.all(
+      qres.map(async (q) => {
+        if ((!q.text || q.text.trim() === '') && q.image_url) {
+          try {
+            const imgResponse = await fetch(q.image_url);
+            if (!imgResponse.ok) return;
+            const imgBuffer = Buffer.from(await imgResponse.arrayBuffer());
+            const extractedText = await performOCR(imgBuffer, 'eng+ben');
+            await sql`UPDATE questions SET text = ${extractedText} WHERE id = ${q.id}`;
+            q.text = extractedText;
+          } catch (e) {
+            console.error("OCR failed for image:", q.image_url);
+          }
         }
-      }
-    }
+      })
+    );
 
     const rres = await sql`
       SELECT text FROM resources
@@ -71,7 +74,7 @@ export async function predictQuestions(
       LIMIT 20
     `;
 
-    const questionsList = qres.map(r => `Year ${r.year}: ${r.text || '[No text extracted]'}`).join('\n\n');
+    const questionsList = qres.map(r => `Year ${r.year}: ${(r.text || '').slice(0, 1200)}`).join('\n\n');
     const resourcesText = rres.map(r => r.text).join('\n\n');
 
     const prompt = `You are an exam prediction expert. Analyze the provided previous years' exam questions and study materials for the subject "${subject}". 
