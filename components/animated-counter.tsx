@@ -1,3 +1,4 @@
+// components/animated-counter.tsx
 "use client"
 import { useState, useEffect } from "react"
 
@@ -11,7 +12,6 @@ export function AnimatedCounter({ value, duration = 1400 }: { value: number; dur
     const step = (ts: number) => {
       if (!startTime) startTime = ts
       const progress = Math.min((ts - startTime) / duration, 1)
-      // Ease-out cubic
       const ease = 1 - Math.pow(1 - progress, 3)
       setCount(Math.floor(ease * value))
       if (progress < 1) {
@@ -19,7 +19,6 @@ export function AnimatedCounter({ value, duration = 1400 }: { value: number; dur
       }
     }
 
-    // Delay start slightly for visual appeal
     const timeout = setTimeout(() => {
       raf = requestAnimationFrame(step)
     }, 400)
