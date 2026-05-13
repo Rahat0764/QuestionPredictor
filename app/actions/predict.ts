@@ -2,6 +2,7 @@
 import { headers } from 'next/headers';
 import { sql, initDB } from '@/lib/db';
 import { getPrediction } from '@/lib/groq';
+import { performOCR } from '@/lib/ocr';
 import type { Prediction } from '@/lib/types';
 import { logToTelegram } from '@/lib/logger';
 import { checkRateLimit } from '@/lib/rateLimit';
@@ -11,14 +12,12 @@ export async function predictQuestions(
   subject: string,
   targetYear: number
 ): Promise<{ success: true; predictions: Prediction[]; cached?: boolean } | { error: string }> {
-  // IP extraction
   const headersList = headers();
   const ip =
     headersList.get('x-real-ip') ||
     headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     'unknown';
 
-  // Rate limit
   if (!checkRateLimit(ip)) {
     logToTelegram(
       `⏳ Rate limit exceeded\nSubject: ${subject}\nYear: ${targetYear}\nIP: ${ip}`,
@@ -27,7 +26,6 @@ export async function predictQuestions(
     return { error: 'You are generating predictions too frequently. Please wait a moment and try again.' };
   }
 
-  // Check cache first
   const cached = getCachedPrediction(subject, targetYear);
   if (cached) {
     logToTelegram(
@@ -43,19 +41,37 @@ export async function predictQuestions(
     if (subjectRes.length === 0) return { error: 'Subject not found' };
     const subjectId = subjectRes[0].id;
 
+    // Fetch questions with image_url
     const qres = await sql`
-      SELECT year, text FROM questions
+      SELECT id, year, text, image_url FROM questions
       WHERE subject_id = ${subjectId} AND year < ${targetYear}
       ORDER BY year DESC
       LIMIT 50
     `;
+
+    // On-demand OCR: যাদের টেক্সট ফাঁকা তাদের ইমেজ থেকে OCR করো
+    for (const q of qres) {
+      if ((!q.text || q.text.trim() === '') && q.image_url) {
+        try {
+          const imgResponse = await fetch(q.image_url);
+          if (!imgResponse.ok) continue;
+          const imgBuffer = Buffer.from(await imgResponse.arrayBuffer());
+          const extractedText = await performOCR(imgBuffer, 'eng+ben');
+          await sql`UPDATE questions SET text = ${extractedText} WHERE id = ${q.id}`;
+          q.text = extractedText;
+        } catch (e) {
+          console.error("OCR failed for image:", q.image_url);
+        }
+      }
+    }
+
     const rres = await sql`
       SELECT text FROM resources
       WHERE subject_name = ${subject} OR subject_name IS NULL
       LIMIT 20
     `;
 
-    const questionsList = qres.map(r => `Year ${r.year}: ${r.text}`).join('\n\n');
+    const questionsList = qres.map(r => `Year ${r.year}: ${r.text || '[No text extracted]'}`).join('\n\n');
     const resourcesText = rres.map(r => r.text).join('\n\n');
 
     const prompt = `You are an exam prediction expert. Analyze the provided previous years' exam questions and study materials for the subject "${subject}". 
@@ -83,7 +99,6 @@ Output ONLY the JSON object.`;
       throw new Error('Invalid prediction format');
     }
 
-    // Store in cache
     setCachedPrediction(subject, targetYear, result.predictions);
 
     logToTelegram(
