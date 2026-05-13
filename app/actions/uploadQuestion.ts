@@ -1,3 +1,4 @@
+// app/actions/uploadQuestion.ts (ফাস্ট, OCR ছাড়া)
 'use server'
 import { put } from '@vercel/blob';
 import { sql, initDB } from '@/lib/db';
@@ -35,7 +36,6 @@ export async function uploadQuestion(
         contentType: file.type,
       });
 
-      // OCR ছাড়াই সংরক্ষণ — পরে Predict-এর সময় হবে
       await sql`INSERT INTO questions (subject_id, year, text, image_url) VALUES (${subjectId}, ${year}, '', ${blob.url})`;
 
       results.push({ url: blob.url, text: "Stored. OCR will run on prediction." });
