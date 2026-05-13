@@ -1,3 +1,4 @@
+// tailwind.config.ts (typo fix)
 import type { Config } from "tailwindcss"
 
 const config = {
