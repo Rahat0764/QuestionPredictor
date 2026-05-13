@@ -1,3 +1,4 @@
+// components/prediction-card.tsx
 "use client"
 import { useState } from "react"
 import type { Prediction } from "@/lib/types"
