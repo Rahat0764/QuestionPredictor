@@ -1,7 +1,6 @@
 'use server'
 import { put } from '@vercel/blob';
 import { sql, initDB } from '@/lib/db';
-import { performOCR } from '@/lib/ocr';
 import type { UploadState } from '@/lib/types';
 import { logToTelegram } from '@/lib/logger';
 
@@ -36,14 +35,13 @@ export async function uploadQuestion(
         contentType: file.type,
       });
 
-      const extractedText = await performOCR(buffer, 'eng+ben');
+      // OCR ছাড়াই সংরক্ষণ — পরে Predict-এর সময় হবে
+      await sql`INSERT INTO questions (subject_id, year, text, image_url) VALUES (${subjectId}, ${year}, '', ${blob.url})`;
 
-      await sql`INSERT INTO questions (subject_id, year, text, image_url) VALUES (${subjectId}, ${year}, ${extractedText}, ${blob.url})`;
-
-      results.push({ url: blob.url, text: extractedText.substring(0, 100) });
+      results.push({ url: blob.url, text: "Stored. OCR will run on prediction." });
     }
 
-    logToTelegram(`📝 Question upload success\nSubject: ${subject}\nYear: ${year}\nFiles: ${files.length}`, 'success').catch(() => {});
+    logToTelegram(`📝 Fast Question upload success\nSubject: ${subject}\nYear: ${year}\nFiles: ${files.length}`, 'success').catch(() => {});
     return { success: true, results };
   } catch (err: any) {
     logToTelegram(`📝 Question upload failed\nError: ${err.message}`, 'error').catch(() => {});
