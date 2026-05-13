@@ -1,3 +1,4 @@
+// app/actions/uploadResource.ts (PDF পার্সিং, ইমেজ OCR ছাড়া)
 'use server'
 import { put } from '@vercel/blob';
 import { sql, initDB } from '@/lib/db';
@@ -37,9 +38,6 @@ export async function uploadResource(
       if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
         const pdfData = await pdfParse(buffer);
         text = pdfData.text || '';
-      } else {
-        // ইমেজ — OCR ছাড়া সংরক্ষণ
-        text = '';
       }
 
       await sql`
